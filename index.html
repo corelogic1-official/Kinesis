@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kinesis // Integrated OS</title>
+    <style>
+        :root {
+            --bg-base: #0a0a12;
+            --bg-card: #121225;
+            --border: #1f1f3a;
+            --text-main: #ffffff;
+            --text-muted: #8a8a9e;
+            --primary: #00f0ff;
+            --secondary: #ff007f;
+            --success: #39ff14;
+            --shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+        }
+
+        [data-theme="light"] {
+            --bg-base: #f0f2f5;
+            --bg-card: #ffffff;
+            --border: #dcdce6;
+            --text-main: #1a1a2e;
+            --text-muted: #62627a;
+            --primary: #0066cc;
+            --secondary: #d8005f;
+            --success: #1b8a00;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        [data-theme="dark-minimal"] {
+            --bg-base: #0f0f0f;
+            --bg-card: #1a1a1a;
+            --border: #2d2d2d;
+            --text-main: #e0e0e0;
+            --text-muted: #777777;
+            --primary: #ffffff;
+            --secondary: #888888;
+            --success: #4caf50;
+            --shadow: none;
+        }
+
+        [data-theme="emerald"] {
+            --bg-base: #06140c;
+            --bg-card: #0b2214;
+            --border: #143d24;
+            --text-main: #a1f7c4;
+            --text-muted: #528c68;
+            --primary: #10fa70;
+            --secondary: #00ffcc;
+            --success: #a1f7c4;
+            --shadow: 0 0 10px rgba(16, 250, 112, 0.2);
+        }
+
+        [data-theme="sunset"] {
+            --bg-base: #140b1c;
+            --bg-card: #241233;
+            --border: #3d1c54;
+            --text-main: #ffe3fa;
+            --text-muted: #9573a6;
+            --primary: #ff5e62;
+            --secondary: #ff9966;
+            --success: #ff5e62;
+            --shadow: 0 0 12px rgba(255, 94, 98, 0.2);
+        }
+
+        [data-theme="frost"] {
+            --bg-base: #0f172a;
+            --bg-card: #1e293b;
+            --border: #334155;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --primary: #38bdf8;
+            --secondary: #818cf8;
+            --success: #34d399;
+            --shadow: 0 0 15px rgba(56, 189, 248, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            transition: background 0.2s, border-color 0.2s, color 0.2s;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Portal Overlays */
+        #auth-overlay, #game-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-base);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        #game-overlay {
+            z-index: 1100;
+            background: rgba(10, 10, 18, 0.95);
+        }
+
+        .auth-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+
+        .auth-card h1 {
+            font-size: 2.2rem;
+            color: var(--primary);
+            letter-spacing: 3px;
+            margin-bottom: 5px;
+        }
+
+        .auth-toggle-text {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+
+        .auth-toggle-text span {
+            color: var(--primary);
+            text-decoration: underline;
+        }
+
+        /* Structure Elements */
+        header {
+            background: var(--bg-card);
+            border-bottom: 2px solid var(--border);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+            letter-spacing: 1.5px;
+        }
+
+        .nav-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        input, select, textarea, button {
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary);
+        }
+
+        button {
+            cursor: pointer;
+            background: var(--primary);
+            color: #000;
+            font-weight: 600;
+            border: none;
+        }
+
+        button:hover { opacity: 0.9; }
+
+        .btn-alt {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+        }
+        .btn-alt:hover { background: var(--border); }
+        
+        .btn-sec {
+            background: var(--secondary);
+            color: #fff;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            padding: 25px;
+            flex-grow: 1;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .card h2 {
+            font-size: 1.2rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+            color: var(--secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Modules Features */
+        .timer-display {
+            font-size: 3.2rem;
+            font-family: monospace;
+            text-align: center;
+            color: var(--primary);
+        }
+
+        .custom-timer-setup, .custom-picker-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+        
+        .custom-timer-setup input { width: 80px; text-align: center; }
+
+        .custom-picker-group {
+            flex-wrap: wrap;
+            font-size: 12px;
+            border: 1px dashed var(--border);
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .custom-picker-group label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .custom-picker-group input[type="color"] {
+            padding: 0; width: 24px; height: 24px; border: none; cursor: pointer; background: transparent;
+        }
+
+        .kanban-input, .beam-input-group {
+            display: flex;
+            gap: 8px;
+        }
+        .kanban-input input, .beam-input-group input { flex-grow: 1; }
+
+        .task-list, .beam-inbox-list {
+            list-style: none;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        .task-item, .beam-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-base);
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            border-left: 3px solid var(--primary);
+            font-size: 14px;
+        }
+        .beam-item { border-left-color: var(--secondary); flex-direction: column; align-items: flex-start; gap: 4px;}
+        .beam-item span.meta { font-size: 11px; color: var(--text-muted); }
+
+        .task-item button { padding: 4px 8px; font-size: 11px; background: var(--secondary); color: #fff; }
+
+        textarea { width: 100%; height: 120px; resize: none; }
+
+        /* Floating Corner Widget HUD */
+        #floating-hud {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--bg-card);
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            padding: 10px 15px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 900;
+        }
+        
+        #floating-hud span { font-family: monospace; font-size: 18px; font-weight: bold; color: var(--primary); }
+        #floating-hud button { padding: 4px 8px; font-size: 12px; }
+
+        /* Game System Layout */
+        #game-canvas {
+            background: #000;
+            border: 2px solid var(--primary);
+            display: block;
+            margin: 15px auto;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="auth-overlay">
+        <div class="auth-card" id="login-view">
+            <h1>KINESIS</h1>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">Identity Domain Authentication</p>
+            <input type="text" id="login-email" placeholder="Email Address (or code)" style="width: 100%; margin-bottom: 12px;">
+            <input type="password" id="login-password" placeholder="Password" style="width: 100%; margin-bottom: 20px;">
+            <button onclick="handleAuthLogin()" style="width: 100%;">Sign In</button>
+            <button onclick="bootOfflineGame()" class="btn-alt" style="width: 100%; margin-top: 10px; border-color: var(--secondary); color: var(--secondary);">Launch Offline Simulator</button>
+            <p class="auth-toggle-text" onclick="toggleAuthViews(true)">Request custom system core allocation? <span>Create Account</span></p>
+        </div>
+
+        <div class="auth-card hidden" id="register-view">
+            <h1>KINESIS</h1>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">Register Architecture Email Node</p>
+            <input type="email" id="reg-email" placeholder="name@domain.com" style="width: 100%; margin-bottom: 12px;">
+            <input type="password" id="reg-password" placeholder="Encryption Key Password" style="width: 100%; margin-bottom: 20px;">
+            <button onclick="handleAuthRegistration()" style="width: 100%; background: var(--secondary); color: white;">Register Node</button>
+            <p class="auth-toggle-text" onclick="toggleAuthViews(false)">Already initialized? <span>Sign In</span></p>
+        </div>
+    </div>
+
+    <div id="game-overlay" class="hidden">
+        <div class="auth-card" style="max-width: 640px;">
+            <h2 style="color: var(--primary); border:none; margin-bottom: 5px;">ARCADE // NEON_RUNNER</h2>
+            <p style="color:var(--text-muted); font-size:12px;">Press SPACE or Click Canvas to hop security blocks</p>
+            <canvas id="game-canvas" width="560" height="200"></canvas>
+            <div style="display:flex; justify-content: space-between; align-items:center; margin-top:10px;">
+                <span id="game-score" style="color: var(--success); font-weight:bold;">Score: 0</span>
+                <span id="game-high" style="color: var(--text-muted);">High Score: 0</span>
+                <button onclick="closeOfflineGame()" class="btn-alt">Terminate Sim</button>
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <div class="logo">KINESIS // OS</div>
+        <div class="nav-controls">
+            <select id="theme-select" onchange="applyMatrixTheme(this.value)">
+                <option value="cyber">Theme: Neon Strike</option>
+                <option value="light">Theme: Office Light</option>
+                <option value="dark-minimal">Theme: Slate Dark</option>
+                <option value="emerald">Theme: Emerald Matrix</option>
+                <option value="sunset">Theme: Sunset Overdrive</option>
+                <option value="frost">Theme: Nordic Frost</option>
+                <option value="custom">Theme: [Custom Node Mode]</option>
+            </select>
+
+            <div id="custom-theme-pickers" class="custom-picker-group hidden">
+                <label>Bg: <input type="color" id="cp-bg" onchange="compileCustomTheme()"></label>
+                <label>Card: <input type="color" id="cp-card" onchange="compileCustomTheme()"></label>
+                <label>Text: <input type="color" id="cp-text" onchange="compileCustomTheme()"></label>
+                <label>Accent: <input type="color" id="cp-acc" onchange="compileCustomTheme()"></label>
+            </div>
+
+            <span id="user-display" style="color: var(--text-muted); font-size: 14px; font-weight: bold;"></span>
+            <button onclick="bootOfflineGame()" class="btn-alt" style="font-size:12px; border-color: var(--secondary)">Game</button>
+            <button class="btn-alt" onclick="handleAuthLogout()">Exit Session</button>
+        </div>
+    </header>
+
+    <main class="dashboard">
+        <div class="card">
+            <h2>⏱️ Focus Engine
+                <select id="timer-mode" onchange="switchTimerEngineMode()" style="padding: 2px 5px; font-size: 12px;">
+                    <option value="pomodoro">Pomodoro (25m)</option>
+                    <option value="custom">Custom Configuration</option>
+                    <option value="stopwatch">Stopwatch</option>
+                </select>
+            </h2>
+            <div id="custom-timer-block" class="custom-timer-setup hidden">
+                <input type="number" id="custom-minutes" min="1" max="1440" value="10" onchange="syncCustomMinutesSetup()">
+                <span style="font-size: 14px; color: var(--text-muted);">mins</span>
+            </div>
+            <div class="timer-display" id="time-view">25:00</div>
+            <div class="timer-btns">
+                <button id="start-btn" onclick="toggleEngineTimer()">Run</button>
+                <button class="btn-alt" onclick="resetEngineTimer()">Reset</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📡 Kinesis Data Beam</h2>
+            <div class="beam-input-group">
+                <input type="text" id="beam-target" placeholder="Target username/email">
+                <input type="text" id="beam-msg" placeholder="Message content payload...">
+                <button onclick="transmitBeamData()">Beam</button>
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top:5px;">Your Signal Postbox Inbox:</div>
+            <ul class="beam-inbox-list" id="beam-inbox-container"></ul>
+        </div>
+
+        <div class="card">
+            <h2>📋 Core Directives</h2>
+            <div class="kanban-input">
+                <input type="text" id="task-entry" placeholder="Compile directive parameters...">
+                <button onclick="addNewWorkspaceTask()">Deploy</button>
+            </div>
+            <ul class="task-list" id="task-container"></ul>
+        </div>
+
+        <div class="card">
+            <h2>📝 Volatile Storage Matrix</h2>
+            <textarea id="scratchpad" placeholder="Allocated user memory blocks. Autocommit local state changes active..." oninput="commitUserScratchpad()"></textarea>
+        </div>
+
+        <div id="admin-card" class="card hidden" style="border: 2px dashed var(--secondary);">
+            <h2 style="color: var(--secondary);">🛡️ Admin Overdrive Controller Panel</h2>
+            <div style="font-size:13px; display:flex; flex-direction:column; gap:10px;">
+                <div>Total Active Registry Footprint Profiles: <strong id="admin-user-count" style="color:var(--primary);">0</strong></div>
+                <button onclick="flushSystemSystemDatabases()" class="btn-sec" style="width:100%;">Clear Memory Bank Profiles</button>
+                <div style="font-size:11px; color:var(--text-muted);">Developer mode state metrics responsive inside storage registers.</div>
+            </div>
+        </div>
+    </main>
+
+    <div id="floating-hud">
+        <span id="hud-timer-view">25:00</span>
+        <button id="hud-toggle-btn" onclick="toggleEngineTimer()">Run</button>
+    </div>
+
+    <script>
+        // System Application State Space
+        let timerInterval = null;
+        let timerRunning = false;
+        let activeMode = 'pomodoro'; 
+        let secondsLeft = 25 * 60;
+        let stopwatchSeconds = 0;
+        let currentUser = "";
+        
+        // Game State Core Engine Scope
+        let gameLoopInterval = null;
+        let canvas, ctx;
+        let runnerY = 160, runnerVelocity = 0, isJumping = false;
+        let obstacles = [];
+        let gameScore = 0;
+        let gameIsRunning = false;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!localStorage.getItem('kinesis_users_system_db')) {
+                localStorage.setItem('kinesis_users_system_db', JSON.stringify({}));
+            }
+            if (!localStorage.getItem('kinesis_global_beams')) {
+                localStorage.setItem('kinesis_global_beams', JSON.stringify([]));
+            }
+
+            const session = localStorage.getItem('kinesis_session_node');
+            if (session) {
+                initializeSessionWorkspace(session);
+            }
+        });
+
+        // Interface Management Visibility Modifiers
+        function toggleAuthViews(showRegister) {
+            if (showRegister) {
+                document.getElementById('login-view').classList.add('hidden');
+                document.getElementById('register-view').classList.remove('hidden');
+            } else {
+                document.getElementById('register-view').classList.add('hidden');
+                document.getElementById('login-view').classList.remove('hidden');
+            }
+        }
+
+        // True Email Matrix Database Registry Controls
+        function handleAuthRegistration() {
+            const email = document.getElementById('reg-email').value.trim();
+            const pass = document.getElementById('reg-password').value;
+
+            if (!email || !pass) { alert("Registration values empty."); return; }
+            if (email.toLowerCase() === 'nevergriddy') { alert("Restricted core protocol keyword configuration."); return; }
+
+            const db = JSON.parse(localStorage.getItem('kinesis_users_system_db'));
+            if (db[email.toLowerCase()]) { alert("Profile target assignment already loaded."); return; }
+
+            db[email.toLowerCase()] = { email: email, password: pass, customTheme: null };
+            localStorage.setItem('kinesis_users_system_db', JSON.stringify(db));
+            alert("Node entry logged. Access granted via Login node.");
+            
+            document.getElementById('reg-email').value = "";
+            document.getElementById('reg-password').value = "";
+            toggleAuthViews(false);
+        }
+
+        function handleAuthLogin() {
+            const emailIn = document.getElementById('login-email').value.trim();
+            const passIn = document.getElementById('login-password').value;
+
+            // Admin Override Port Logic Handler
+            if (emailIn.toLowerCase() === 'nevergriddy') {
+                localStorage.setItem('kinesis_session_node', 'nevergriddy');
+                initializeSessionWorkspace('nevergriddy');
+                return;
+            }
+
+            const db = JSON.parse(localStorage.getItem('kinesis_users_system_db'));
+            const userMatch = db[emailIn.toLowerCase()];
+
+            if (userMatch && userMatch.password === passIn) {
+                localStorage.setItem('kinesis_session_node', userMatch.email);
+                initializeSessionWorkspace(userMatch.email);
+            } else {
+                alert("Security handshake denied. Invalid credentials.");
+            }
+        }
+
+        function initializeSessionWorkspace(user) {
+            currentUser = user;
+            document.getElementById('auth-overlay').classList.add('hidden');
+            document.getElementById('user-display').textContent = `${user}`;
+            
+            // Render specific profile datasets
+            document.getElementById('scratchpad').value = localStorage.getItem(`kinesis_notes_${currentUser}`) || '';
+            
+            // Check Admin exclusive privileges access criteria
+            if (currentUser.toLowerCase() === 'nevergriddy') {
+                document.getElementById('admin-card').classList.remove('hidden');
+                const db = JSON.parse(localStorage.getItem('kinesis_users_system_db'));
+                document.getElementById('admin-user-count').textContent = Object.keys(db).length;
+            } else {
+                document.getElementById('admin-card').classList.add('hidden');
+            }
+
+            // Load Custom Theme Matrix Profiles if existing
+            const db = JSON.parse(localStorage.getItem('kinesis_users_system_db'));
+            if (db[currentUser.toLowerCase()] && db[currentUser.toLowerCase()].customTheme) {
+                const ct = db[currentUser.toLowerCase()].customTheme;
+                document.getElementById('theme-select').value = 'custom';
+                document.getElementById('custom-theme-pickers').classList.remove('hidden');
+                document.getElementById('cp-bg').value = ct.bg;
+                document.getElementById('cp-card').value = ct.card;
+                document.getElementById('cp-text').value = ct.text;
+                document.getElementById('cp-acc').value = ct.acc;
+                compileCustomTheme();
+            }
+
+            renderTasksListElements();
+            fetchUserBeamsIncomingInboxes();
+        }
+
+        function handleAuthLogout() {
+            clearInterval(timerInterval);
+            timerRunning = false;
+            document.getElementById('start-btn').textContent = "Run";
+            document.getElementById('hud-toggle-btn').textContent = "Run";
+            localStorage.removeItem('kinesis_session_node');
+            currentUser = "";
+            document.getElementById('scratchpad').value = "";
+            document.getElementById('task-container').innerHTML = "";
+            document.getElementById('beam-inbox-container').innerHTML = "";
+            document.documentElement.removeAttribute('data-theme');
+            document.documentElement.style.setProperty('--bg-base', '');
+            document.documentElement.style.setProperty('--bg-card', '');
+            document.documentElement.style.setProperty('--text-main', '');
+            document.documentElement.style.setProperty('--primary', '');
+            document.getElementById('custom-theme-pickers').classList.add('hidden');
+            document.getElementById('theme-select').value = 'cyber';
+            document.getElementById('auth-overlay').classList.remove('hidden');
+        }
+
+        // Theme Space Compilation Matrix Options
+        function applyMatrixTheme(themeName) {
+            const pickers = document.getElementById('custom-theme-pickers');
+            if (themeName === 'custom') {
+                pickers.classList.remove('hidden');
+                compileCustomTheme();
+            } else {
+                pickers.classList.add('hidden');
+                // Remove custom manual injection override rules
+                document.documentElement.style.setProperty('--bg-base', '');
+                document.documentElement.style.setProperty('--bg-card', '');
+                document.documentElement.style.setProperty('--text-main', '');
+                document.documentElement.style.setProperty('--primary', '');
+                
+                if(themeName === 'cyber') {
+                    document.documentElement.removeAttribute('data-theme');
+                } else {
+                    document.documentElement.setAttribute('data-theme', themeName);
+                }
+            }
+        }
+
+        function compileCustomTheme() {
+            const bg = document.getElementById('cp-bg').value;
+            const card = document.getElementById('cp-card').value;
+            const text = document.getElementById('cp-text').value;
+            const acc = document.getElementById('cp-acc').value;
+
+            document.documentElement.style.setProperty('--bg-base', bg);
+            document.documentElement.style.setProperty('--bg-card', card);
+            document.documentElement.style.setProperty('--text-main', text);
+            document.documentElement.style.setProperty('--primary', acc);
+
+            // Save custom layout configuration properties inside user specific space profile
+            if (currentUser && currentUser.toLowerCase() !== 'nevergriddy') {
+                const db = JSON.parse(localStorage.getItem('kinesis_users_system_db'));
+                db[currentUser.toLowerCase()].customTheme = { bg, card, text, acc };
+                localStorage.setItem('kinesis_users_system_db', JSON.stringify(db));
+            }
+        }
+
+        // Focus Engine Operational Logics
+        function switchTimerEngineMode() {
+            clearInterval(timerInterval);
+            timerRunning = false;
+            document.getElementById('start-btn').textContent = "Run";
+            document.getElementById('hud-toggle-btn').textContent = "Run";
+            activeMode = document.getElementById('timer-mode').value;
+            
+            const customBlock = document.getElementById('custom-timer-block');
+            if (activeMode === 'custom') {
+                customBlock.classList.remove('hidden');
+                syncCustomMinutesSetup();
+            } else {
+                customBlock.classList.add('hidden');
+                if (activeMode === 'pomodoro') {
+                    secondsLeft = 25 * 60;
+                    formatTimerViewsOutput(secondsLeft);
+                } else {
+                    stopwatchSeconds = 0;
+                    formatTimerViewsOutput(stopwatchSeconds);
+                }
+            }
+        }
+
+        function syncCustomMinutesSetup() {
+            if (activeMode !== 'custom') return;
+            const mins = parseInt(document.getElementById('custom-minutes').value) || 10;
+            secondsLeft = mins * 60;
+            formatTimerViewsOutput(secondsLeft);
+        }
+
+        function toggleEngineTimer() {
+            if (timerRunning) {
+                clearInterval(timerInterval);
+                document.getElementById('start-btn').textContent = "Run";
+                document.getElementById('hud-toggle-btn').textContent = "Run";
+            } else {
+                document.getElementById('start-btn').textContent = "Halt";
+                document.getElementById('hud-toggle-btn').textContent = "Halt";
+                if (activeMode === 'pomodoro' || activeMode === 'custom') {
+                    timerInterval = setInterval(() => {
+                        if (secondsLeft > 0) {
+                            secondsLeft--;
+                            formatTimerViewsOutput(secondsLeft);
+                        } else {
+                            clearInterval(timerInterval);
+                            alert("Time allotment expired inside system engine.");
+                            resetEngineTimer();
+                        }
+                    }, 1000);
+                } else {
+                    timerInterval = setInterval(() => {
+                        stopwatchSeconds++;
+                        formatTimerViewsOutput(stopwatchSeconds);
+                    }, 1000);
+                }
+            }
+            timerRunning = !timerRunning;
+        }
+
+        function resetEngineTimer() {
+            clearInterval(timerInterval);
+            timerRunning = false;
+            document.getElementById('start-btn').textContent = "Run";
+            document.getElementById('hud-toggle-btn').textContent = "Run";
+            if (activeMode === 'pomodoro') {
+                secondsLeft = 25 * 60;
+                formatTimerViewsOutput(secondsLeft);
+            } else if (activeMode === 'custom') {
+                syncCustomMinutesSetup();
+            } else {
+                stopwatchSeconds = 0;
+                formatTimerViewsOutput(stopwatchSeconds);
+            }
+        }
+
+        function formatTimerViewsOutput(totalSecs) {
+            const mins = Math.floor(totalSecs / 60).toString().padStart(2, '0');
+            const secs = (totalSecs % 60).toString().padStart(2, '0');
+            const formatted = `${mins}:${secs}`;
+            document.getElementById('time-view').textContent = formatted;
+            document.getElementById('hud-timer-view').textContent = formatted;
+        }
+
+        // Peer To Peer Micro-Bussing Transmission Routing (Data Beam)
+        function transmitBeamData() {
+            const target = document.getElementById('beam-target').value.trim().toLowerCase();
+            const payload = document.getElementById('beam-msg').value.trim();
+
+            if (!target || !payload) return;
+
+            const db = JSON.parse(localStorage.getItem('kinesis_users_system_db'));
+            if (target !== 'nevergriddy' && !db[target]) {
+                alert("Target transceiver channel coordinates not recognized.");
+                return;
+            }
+
+            const beams = JSON.parse(localStorage.getItem('kinesis_global_beams')) || [];
+            beams.push({
+                sender: currentUser,
+                receiver: target,
+                message: payload,
+                timestamp: new Date().toLocaleTimeString()
+            });
+
+            localStorage.setItem('kinesis_global_beams', JSON.stringify(beams));
+            document.getElementById('beam-msg').value = "";
+            alert("Data packet pulsed to target node registration successfully.");
+        }
+
+        function fetchUserBeamsIncomingInboxes() {
+            const container = document.getElementById('beam-inbox-container');
+            container.innerHTML = "";
+            const beams = JSON.parse(localStorage.getItem('kinesis_global_beams')) || [];
+            
+            const myBeams = beams.filter(b => b.receiver === currentUser.toLowerCase());
+            if(myBeams.length === 0) {
+                container.innerHTML = "<div style='font-size:12px; color:var(--text-muted)'>No pulses found.</div>";
+                return;
+            }
+
+            myBeams.forEach(b => {
+                const li = document.createElement('li');
+                li.className = 'beam-item';
+                li.innerHTML = `<div><strong>${b.sender}:</strong> ${b.message}</div><span class='meta'>${b.timestamp}</span>`;
+                container.appendChild(li);
+            });
+        }
+
+        // Tasks Directives Module Handler Controls
+        function getTasksDataPool() {
+            if (!currentUser) return [];
+            return JSON.parse(localStorage.getItem(`kinesis_tasks_${currentUser}`)) || [];
+        }
+
+        function addNewWorkspaceTask() {
+            const input = document.getElementById('task-entry');
+            const val = input.value.trim();
+            if(!val || !currentUser) return;
+
+            const cache = getTasksDataPool();
+            cache.push({ id: Date.now(), text: val });
+            localStorage.setItem(`kinesis_tasks_${currentUser}`, JSON.stringify(cache));
+            input.value = "";
+            renderTasksListElements();
+        }
+
+        function purgeSingleTaskNode(id) {
+            const cache = getTasksDataPool().filter(t => t.id !== id);
+            localStorage.setItem(`kinesis_tasks_${currentUser}`, JSON.stringify(cache));
+            renderTasksListElements();
+        }
+
+        function renderTasksListElements() {
+            const container = document.getElementById('task-container');
+            container.innerHTML = "";
+            getTasksDataPool().forEach(task => {
+                const li = document.createElement('li');
+                li.className = 'task-item';
+                li.innerHTML = `<span>${task.text}</span><button onclick="purgeSingleTaskNode(${task.id})">Clear</button>`;
+                container.appendChild(li);
+            });
+        }
+
+        function commitUserScratchpad() {
+            if (!currentUser) return;
+            localStorage.setItem(`kinesis_notes_${currentUser}`, document.getElementById('scratchpad').value);
+        }
+
+        // Admin Operational Diagnostics
+        function flushSystemSystemDatabases() {
+            if (confirm("Confirm total clean database dump execute code operation?")) {
+                localStorage.setItem('kinesis_users_system_db', JSON.stringify({}));
+                localStorage.setItem('kinesis_global_beams', JSON.stringify([]));
+                alert("Database systems wiped cleanly.");
+                handleAuthLogout();
+            }
+        }
+
+        // Offline Game Simulation Framework
+        function bootOfflineGame() {
+            document.getElementById('game-overlay').classList.remove('hidden');
+            canvas = document.getElementById('game-canvas');
+            ctx = canvas.getContext('2d');
+            
+            // Set High Score Metric High Visuals
+            document.getElementById('game-high').textContent = "High Score: " + (localStorage.getItem('kinesis_game_hi') || 0);
+            
+            // Re-Init Engine Specs
+            gameScore = 0;
+            obstacles = [];
+            runnerY = 160;
+            runnerVelocity = 0;
+            gameIsRunning = true;
+            
+            window.addEventListener('keydown', handleGameInputTriggers);
+            canvas.addEventListener('click', processJumpTriggerAction);
+            
+            gameLoopInterval = setInterval(updateArcadeSimulationLoop, 1000 / 60);
+        }
+
+        function closeOfflineGame() {
+            clearInterval(gameLoopInterval);
+            gameIsRunning = false;
+            window.removeEventListener('keydown', handleGameInputTriggers);
+            document.getElementById('game-overlay').classList.add('hidden');
+        }
+
+        function handleGameInputTriggers(e) {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                processJumpTriggerAction();
+            }
+        }
+
+        function processJumpTriggerAction() {
+            if (!isJumping) {
+                runnerVelocity = -12;
+                isJumping = true;
+            }
+        }
+
+        function updateArcadeSimulationLoop() {
+            // Environment Clean Clear Canvas Frame
+            ctx.fillStyle = '#05050a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Ground Floor Vector
+            ctx.strokeStyle = '#1f1f3a';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, 180);
+            ctx.lineTo(canvas.width, 180);
+            ctx.stroke();
+
+            // Physics Applied to Runner Element
+            runnerVelocity += 0.6; // Gravity Constant
+            runnerY += runnerVelocity;
+            if (runnerY >= 160) {
+                runnerY = 160;
+                isJumping = false;
+            }
+
+            // Draw Core Player Node Element
+            ctx.fillStyle = '#00f0ff';
+            ctx.fillRect(40, runnerY, 20, 20);
+
+            // Spawning Obstacle Barriers
+            if (Math.random() < 0.015 && (obstacles.length === 0 || obstacles[obstacles.length - 1].x < canvas.width - 150)) {
+                obstacles.push({ x: canvas.width, width: 15, height: 20 + Math.random() * 15 });
+            }
+
+            // Loop Process Barrier Arrays
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].x -= 5; // Velocity Speed Speed Matrix
+
+                ctx.fillStyle = '#ff007f';
+                ctx.fillRect(obstacles[i].x, 180 - obstacles[i].height, obstacles[i].width, obstacles[i].height);
+
+                // Check for Collisions
+                if (obstacles[i].x < 60 && obstacles[i].x + obstacles[i].width > 40 && runnerY + 20 > 180 - obstacles[i].height) {
+                    // Critical Impact Failure Encountered
+                    clearInterval(gameLoopInterval);
+                    gameIsRunning = false;
+                    alert("Simulation failure. Security wall impact detected. Score: " + gameScore);
+                    
+                    const hi = localStorage.getItem('kinesis_game_hi') || 0;
+                    if (gameScore > hi) {
+                        localStorage.setItem('kinesis_game_hi', gameScore);
+                    }
+                    closeOfflineGame();
+                    return;
+                }
+
+                // Check if obstacle passed safely
+                if (obstacles[i].x === 35) {
+                    gameScore++;
+                    document.getElementById('game-score').textContent = "Score: " + gameScore;
+                }
+
+                if (obstacles[i].x < -50) {
+                    obstacles.splice(i, 1);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
